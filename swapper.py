@@ -10,7 +10,7 @@ from Tkconstants import RIGHT, END, DISABLED, BOTH, LEFT, \
     VERTICAL, Y, GROOVE, SUNKEN, SOLID, TOP, W, E, BOTTOM, X, \
     CENTER
 from Tkinter import Tk, Label, Toplevel, Menu, PanedWindow, \
-    Frame, Button, StringVar, Text
+    Frame, Button, StringVar, Text, Listbox
 from log import logger
 from PIL import ImageTk
 
@@ -31,7 +31,7 @@ class ui:
 
         self.__convert_frame = Frame(self.__root, width=constants.WIDTH/3, borderwidth=1, relief=SOLID,
                                      height=constants.HEIGHT - constants.HEIGHT/4 - 20)
-        self.__convert_frame.grid_propagate(False)
+        self.__convert_frame.pack_propagate(False)
         self.__convert_frame.grid(row=1, column=0, padx=5, pady=5)
 
         self.__sub_frame = Frame(self.__root, width=constants.WIDTH - constants.WIDTH/3 - 20, borderwidth=1, relief=SOLID,
@@ -66,7 +66,19 @@ class ui:
         self.__master_frame.grid_columnconfigure(0, weight=1)
 
     def create_convert_frame(self):
-        pass
+        lbl = Label(self.__convert_frame, text="Files to convert")
+        lbl.pack(side=TOP)
+
+        self.__convert_entry = Listbox(self.__convert_frame, width = 29, height = 12)
+        self.__convert_entry.pack(side=TOP)
+
+        convert = Button(self.__convert_frame, text="Convert")
+        remove = Button(self.__convert_frame, text="Remove Item")
+        load = Button(self.__convert_frame, image=self.__load_icon, width=27, height=20)
+
+        convert.pack(side=LEFT, padx=(10,5), pady=5)
+        remove.pack(side=LEFT, padx=(0,5))
+        load.pack(side=LEFT)
 
     def create_sub_frame(self):
         pass
