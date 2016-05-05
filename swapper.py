@@ -4,6 +4,7 @@
 # @Author: Grant Mercer
 ############################
 import constants
+import tkFileDialog
 
 from Tkconstants import RIGHT, END, DISABLED, BOTH, LEFT, \
     VERTICAL, Y, GROOVE, SUNKEN, SOLID, TOP, W, E, BOTTOM, X, \
@@ -44,20 +45,43 @@ class ui:
 
         self.__root.geometry('%dx%d+%d+%d' % (constants.WIDTH, constants.HEIGHT, x, y))
 
-        load_btn = Button(self.__master_frame, image=self.__load_icon, width=20, height=20)
+        self.create_master_frame()
+        self.create_convert_frame()
+        self.create_sub_frame()
+
+    def create_master_frame(self):
+        load_btn = Button(self.__master_frame, image=self.__load_icon, width=20, height=20,
+                          command=self.import_master_file)
         load_btn.grid(row=1, column=1, padx=5, pady=5)
 
         lbl_master = Label(self.__master_frame, text="Master List")
         lbl_master.grid(row=1, column=2, padx=5, pady=5)
 
-        lbl_file = Label(self.__master_frame, bg="white", relief=SUNKEN,
-                         width=26)
-        lbl_file.grid(row=2, column=1, padx=5, pady=5, columnspan=3)
+        self.__lbl_file = Label(self.__master_frame, bg="white", relief=SUNKEN, width=26)
+        self.__lbl_file.grid(row=2, column=1, padx=5, pady=5, columnspan=3)
 
         self.__master_frame.grid_rowconfigure(0, weight=1)
         self.__master_frame.grid_columnconfigure(3, weight=1)
         self.__master_frame.grid_rowconfigure(3, weight=1)
         self.__master_frame.grid_columnconfigure(0, weight=1)
+
+    def create_convert_frame(self):
+        pass
+
+    def create_sub_frame(self):
+        pass
+
+    def import_master_file(self):
+        file_types = [('Semicolon Separated Text Files', '*.txt'), ('All Files', '*')]
+        dlg = tkFileDialog.Open(filetypes=file_types)
+        fl = dlg.show()
+        if fl != '':
+            self.__master_file = fl
+            segments = self.__master_file.rpartition('/')
+            self.__lbl_file.config(text=segments[2])
+
+    def import_sub_file(self):
+        pass
 
 
 
