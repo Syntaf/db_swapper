@@ -33,8 +33,9 @@ class ui:
         self.__convert_frame.grid_propagate(False)
         self.__convert_frame.grid(row=1, column=0, padx=5, pady=5)
 
-        self.__sub_frame = Frame(self.__root, width=constants.WIDTH - constants.WIDTH/3, borderwidth=1, relief=SOLID)
-        self.__sub_frame.grid(row=0, column=1, padx=5, pady=5)
+        self.__sub_frame = Frame(self.__root, width=constants.WIDTH - constants.WIDTH/3 - 20, borderwidth=1, relief=SOLID,
+                                 height=constants.HEIGHT - 10)
+        self.__sub_frame.grid(row=0, column=1, padx=5, pady=5, columnspan=2, rowspan=2)
 
     def setup_gui(self):
         self.__root.title('db_swapper')
