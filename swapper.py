@@ -105,7 +105,7 @@ class ui:
             grid(row=14, column=1, sticky=W)
         Radiobutton(self.__sub_frame, text="Greater", variable=self.__match_rule, value=2).\
             grid(row=14, column=2, sticky=W)
-        Radiobutton(self.__sub_frame, text="Equal", variable=self.__match_rule, value=2).\
+        Radiobutton(self.__sub_frame, text="Equal", variable=self.__match_rule, value=3).\
             grid(row=14, column=3, sticky=W)
 
         btn = Button(self.__sub_frame, text="Merge", width=24)
