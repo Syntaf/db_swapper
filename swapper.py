@@ -20,32 +20,38 @@ class ui:
         self.__root = r         # root of program
         self.__load_icon = ImageTk.PhotoImage(file=constants.PATH + r'/ico/load.png')
 
-        self.__convert_list = []
-        self.__sub_list = []
+        self.__convert_list = []        # holds list of files to be converted
+        self.__sub_list = []            # holds list of files to compare against master
 
-        self.__match_rule = IntVar()
+        self.__match_rule = IntVar()    # the rule on how to merge files into master
 
         # public window dimensions
         self.width = self.__root.winfo_screenwidth()
         self.height = self.__root.winfo_screenheight()
 
+        # upper left side of screen
         self.__master_frame = Frame(self.__root, width=constants.WIDTH/3, borderwidth=1, relief=SOLID,
                                     height=constants.HEIGHT/4)
         self.__master_frame.grid_propagate(False)
         self.__master_frame.grid(row=0, column=0, padx=5, pady=5)
 
-
+        # lower left side of screen
         self.__convert_frame = Frame(self.__root, width=constants.WIDTH/3, borderwidth=1, relief=SOLID,
                                      height=constants.HEIGHT - constants.HEIGHT/4 - 20)
         self.__convert_frame.pack_propagate(False)
         self.__convert_frame.grid(row=1, column=0, padx=5, pady=5)
 
+        # right side of screen
         self.__sub_frame = Frame(self.__root, width=constants.WIDTH - constants.WIDTH/3 - 20, borderwidth=1, relief=SOLID,
                                  height=constants.HEIGHT - 10)
         self.__sub_frame.grid_propagate(False)
         self.__sub_frame.grid(row=0, column=1, padx=5, pady=5, columnspan=2, rowspan=2)
 
     def setup_gui(self):
+        """
+        Top level function which is called from main(). Sets window title and dimensions, then calls three sub
+        routines which created and setup the rest of the GUI
+        """
         self.__root.title('db_swapper')
         x = (self.width - constants.WIDTH) / 2
         y = (self.height - constants.HEIGHT) / 2
@@ -57,6 +63,9 @@ class ui:
         self.create_sub_frame()
 
     def create_master_frame(self):
+        """
+        Initialize the GUI for the upper left
+        """
         load_btn = Button(self.__master_frame, image=self.__load_icon, width=20, height=20,
                           command=self.import_master_file)
         load_btn.grid(row=1, column=1, padx=5, pady=5)
@@ -73,6 +82,9 @@ class ui:
         self.__master_frame.grid_columnconfigure(0, weight=1)
 
     def create_convert_frame(self):
+        """
+        Initialize the GUI for the lower left side of the program
+        """
         lbl = Label(self.__convert_frame, text="Files to split")
         lbl.pack(side=TOP)
 
@@ -90,6 +102,9 @@ class ui:
         load.pack(side=LEFT)
 
     def create_sub_frame(self):
+        """
+        Initialize the GUI for the right side of the program
+        """
         self.__sub_lbox = Listbox(self.__sub_frame, width = 30, height = 23, selectmode=EXTENDED)
         self.__sub_lbox.grid(row=0, column=0, rowspan=20, padx=5, pady=5)
 
@@ -123,6 +138,10 @@ class ui:
 
 
     def import_master_file(self):
+        """
+        Method called with the user chooses to import a master file, opens a dialog for the user to browse and
+        select a file, then displays the file chosen within a label and sets the internal variable __master_file
+        """
         file_types = [('Semicolon Separated Text Files', ('*.csv', '*.txt')), ('All Files', '*')]
         dlg = tkFileDialog.Open(filetypes=file_types)
         fl = dlg.show()
@@ -132,6 +151,11 @@ class ui:
             self.__lbl_file.config(text=segments[2])
 
     def import_and_append_file(self, lbox, lbox_list):
+        """
+        Method to prompt a user for a selection of files, and append those files to a list box and internal list.
+        Takes a Listbox and list object, and inserts the selected filenames into the Listbox and the full path
+        filenames into the list
+        """
         file_types = [('Semicolon Separated Files', ('*.csv', '*.txt')), ('All Files', '*')]
         files = list(tkFileDialog.askopenfilenames(filetypes=file_types))
         if files is not None:
@@ -140,8 +164,13 @@ class ui:
                 lbox_list.append(file)
 
     def remove_item(self, lbox, lbox_list):
+        """
+        Removes any items currently selected in a listbox passed. Also ensures to remove that item from the internal
+        list passed.
+        """
         indexes = list(lbox.curselection())
 
+        # Remove in reversed order so the indices do not change as we delete
         for idx in reversed(indexes):
             lbox.delete(idx)
             del lbox_list[idx]
@@ -150,21 +179,26 @@ class ui:
         """
         Splits a large csv file into smaller csv files based upon their first column
         """
-        print "starting"
+
+        # loop through each file in the Listbox
         for item in self.__convert_list:
             with open(item, 'rb') as file:
-                master_reader = csv.reader(file, delimiter=';')
-                curr = None
-                segment = []
+                # open the file and create a reader
+                master_reader = csv.reader(file, delimiter=constants.DELIMITER)
+                curr = None     # keeps track of current running subject
+                segment = []    # rows are appended to this list as long as the subject remains the same
                 for row in master_reader:
-                    print row
+                    # if curr is empty, start a new subject
                     if curr is None: curr = row[0]
                     if curr != row[0]:
+                        # sometimes the csv file contains a header sep, if so then ignore it
                         if 'sep=' in curr:
                             curr = None
                             segment=[]
                             continue
+                        # create a csv file with the name of the subject
                         with open(constants.PATH + '/' + curr + '.csv', 'wb') as write_out:
+                            # write out the delimiter helper, then write the segment list
                             write_out.write('sep='+constants.DELIMITER + '\n')
                             writer = csv.writer(write_out, delimiter=constants.DELIMITER)
                             for seg in segment:
@@ -173,6 +207,7 @@ class ui:
                         curr = None
                     else:
                         segment.append(row)
+                # if segments has data for a subject at the end of the loop, write the data to the subject
                 if list is not None:
                     with open(constants.PATH + '/' + curr + '.csv', 'wb') as write_out:
                         write_out.write('sep='+constants.DELIMITER + '\n')
