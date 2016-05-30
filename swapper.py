@@ -8,7 +8,7 @@ import tkFileDialog
 
 from Tkconstants import RIGHT, END, DISABLED, BOTH, LEFT, \
     VERTICAL, Y, GROOVE, SUNKEN, SOLID, TOP, W, E, BOTTOM, X, \
-    CENTER, S, N
+    CENTER, S, N, MULTIPLE, EXTENDED
 from Tkinter import Tk, Label, Toplevel, Menu, PanedWindow, \
     Frame, Button, IntVar, Text, Listbox, Radiobutton
 from log import logger
@@ -72,30 +72,31 @@ class ui:
         self.__master_frame.grid_columnconfigure(0, weight=1)
 
     def create_convert_frame(self):
-        lbl = Label(self.__convert_frame, text="Files to convert")
+        lbl = Label(self.__convert_frame, text="Files to split")
         lbl.pack(side=TOP)
 
-        self.__convert_lbox = Listbox(self.__convert_frame, width = 29, height = 12)
+        self.__convert_lbox = Listbox(self.__convert_frame, width=29, height=12, selectmode=EXTENDED)
         self.__convert_lbox.pack(side=TOP)
 
         convert = Button(self.__convert_frame, text="Convert", command=self.convert_files)
-        remove = Button(self.__convert_frame, text="Remove Item")
+        remove = Button(self.__convert_frame, text="Remove Item",
+                        command=lambda: self.remove_item(self.__convert_lbox, self.__convert_list))
         load = Button(self.__convert_frame, image=self.__load_icon, width=27, height=20,
-                      command=lambda: self.import_append_file(self.__convert_lbox))
+                      command=lambda: self.import_and_append_file(self.__convert_lbox, self.__convert_list))
 
         convert.pack(side=LEFT, padx=(10,5), pady=5)
         remove.pack(side=LEFT, padx=(0,5))
         load.pack(side=LEFT)
 
     def create_sub_frame(self):
-        self.__sub_lbox = Listbox(self.__sub_frame, width = 30, height = 23)
+        self.__sub_lbox = Listbox(self.__sub_frame, width = 30, height = 23, selectmode=EXTENDED)
         self.__sub_lbox.grid(row=0, column=0, rowspan=20, padx=5, pady=5)
 
         lbl = Label(self.__sub_frame, justify=LEFT,
                     text = "To use db_swapper first load a\nmaster list, the database you wish\nto"
                            " merge files into. Then add\nany sub files to compare against\nand hit"
-                           " 'merge'. Use convert to\nchange space, tab, or comma\ndelimited"
-                           " files into semicolon\ndelimited.")
+                           " 'merge'. Use convert to\nsplit a large file into smaller files\nthat "
+                           "have a matching first\ncolumn.")
         lbl.grid(row=1, column=1, rowspan=20, columnspan=4, sticky=N+W)
 
         lbl2 = Label(self.__sub_frame, text="Merge into master if a matched\nsub item is:", justify=LEFT)
@@ -108,18 +109,20 @@ class ui:
         Radiobutton(self.__sub_frame, text="Equal", variable=self.__match_rule, value=3).\
             grid(row=14, column=3, sticky=W)
 
-        btn = Button(self.__sub_frame, text="Merge", width=24)
+        btn = Button(self.__sub_frame, text="Merge", width=24, command=self.merge_files)
         btn.grid(row=19, column=1, padx=(0,5), columnspan=4, sticky=W)
 
-        open = Button(self.__sub_frame, image=self.__load_icon, width=73, height=35)
+        open = Button(self.__sub_frame, image=self.__load_icon, width=73, height=35,
+                      command=lambda: self.import_and_append_file(self.__sub_lbox, self.__sub_list))
         open.grid(row=18, column=1, padx=(0,0), sticky=W, columnspan=2)
 
-        remove = Button(self.__sub_frame, text="Remove Item", width=10, height=2)
+        remove = Button(self.__sub_frame, text="Remove Item", width=10, height=2,
+                        command=lambda: self.remove_item(self.__sub_lbox, self.__sub_list))
         remove.grid(row=18, column=2, padx=(40,0), sticky=W, columnspan=2)
 
 
     def import_master_file(self):
-        file_types = [('Semicolon Separated Text Files', '*.txt'), ('All Files', '*')]
+        file_types = [('Semicolon Separated Text Files', ('*.csv', '*.txt')), ('All Files', '*')]
         dlg = tkFileDialog.Open(filetypes=file_types)
         fl = dlg.show()
         if fl != '':
@@ -127,10 +130,27 @@ class ui:
             segments = self.__master_file.rpartition('/')
             self.__lbl_file.config(text=segments[2])
 
-    def import_append_file(self, lbox):
-        pass
+    def import_and_append_file(self, lbox, lbox_list):
+        file_types = [('Semicolon Separated Files', ('*.csv', '*.txt')), ('All Files', '*')]
+        files = list(tkFileDialog.askopenfilenames(filetypes=file_types))
+        if files is not None:
+            for file in files:
+                lbox.insert(END, file.rpartition('/')[2])
+                lbox_list.append(file)
+
+    def remove_item(self, lbox, lbox_list):
+        indexes = list(lbox.curselection())
+
+        for idx in reversed(indexes):
+            lbox.delete(idx)
+            del lbox_list[idx]
 
     def convert_files(self):
+        """
+        Splits a large csv file into smaller csv files based upon their first column
+        """
+
+    def merge_files(self):
         pass
 
 
