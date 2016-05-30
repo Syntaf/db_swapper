@@ -4,6 +4,7 @@
 # @Author: Grant Mercer
 ############################
 import constants
+import csv
 import tkFileDialog
 
 from Tkconstants import RIGHT, END, DISABLED, BOTH, LEFT, \
@@ -149,6 +150,36 @@ class ui:
         """
         Splits a large csv file into smaller csv files based upon their first column
         """
+        print "starting"
+        for item in self.__convert_list:
+            with open(item, 'rb') as file:
+                master_reader = csv.reader(file, delimiter=';')
+                curr = None
+                segment = []
+                for row in master_reader:
+                    print row
+                    if curr is None: curr = row[0]
+                    if curr != row[0]:
+                        if 'sep=' in curr:
+                            curr = None
+                            segment=[]
+                            continue
+                        with open(constants.PATH + '/' + curr + '.csv', 'wb') as write_out:
+                            write_out.write('sep='+constants.DELIMITER + '\n')
+                            writer = csv.writer(write_out, delimiter=constants.DELIMITER)
+                            for seg in segment:
+                                writer.writerow(seg)
+                        segment = []
+                        curr = None
+                    else:
+                        segment.append(row)
+                if list is not None:
+                    with open(constants.PATH + '/' + curr + '.csv', 'wb') as write_out:
+                        write_out.write('sep='+constants.DELIMITER + '\n')
+                        writer = csv.writer(write_out, delimiter=constants.DELIMITER)
+                        for seg in segment:
+                            writer.writerow(seg)
+
 
     def merge_files(self):
         pass
