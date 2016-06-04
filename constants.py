@@ -1,3 +1,7 @@
+LESS = 1
+GREATER = 2
+EQUAL = 3
+
 PATH = '.'
 WIDTH = 600
 HEIGHT = 400
