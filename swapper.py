@@ -235,8 +235,8 @@ class ui:
                             for seg in segment:
                                 writer.writerow(seg)
                         segment = []
-                        curr = row[0]
-                        segment.append(row)
+                        curr = row[0]       # if row doesn't match previous curr, it becomes the new curr
+                        segment.append(row) # append this row to the start of the new curr
                     else:
                         segment.append(row)
                 # if segments has data for a subject at the end of the loop, write the data to the subject
@@ -263,6 +263,8 @@ class ui:
                 parts = 0
                 segment = []
                 for row in master_reader:
+                    if('sep=' in '\t'.join(row)):
+                        continue
                     count += 1
                     segment.append(row)
                     if(count == num):
