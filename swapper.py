@@ -11,7 +11,8 @@ from Tkconstants import RIGHT, END, DISABLED, BOTH, LEFT, \
     VERTICAL, Y, GROOVE, SUNKEN, SOLID, TOP, W, E, BOTTOM, X, \
     CENTER, S, N, MULTIPLE, EXTENDED
 from Tkinter import Tk, Label, Toplevel, Menu, PanedWindow, \
-    Frame, Button, IntVar, Text, Listbox, Radiobutton, OptionMenu
+    Frame, Button, IntVar, Text, Listbox, Radiobutton, OptionMenu,\
+    Entry
 from log import logger
 from PIL import ImageTk
 
@@ -23,6 +24,9 @@ class ui:
         self.__master_file = ""         # file to merge into
         self.__convert_list = []        # holds list of files to be converted
         self.__sub_list = []            # holds list of files to compare against master
+
+        self.__convert_opts = None      # Top level for additional convert options
+        self.__nth_number = None        # Entry box for holding nth number for convert option
 
         self.__match_rule = IntVar()    # the rule on how to merge files into master
         self.__column_rule = IntVar()   # which column to use for comparing
@@ -94,7 +98,7 @@ class ui:
         self.__convert_lbox = Listbox(self.__convert_frame, width=29, height=12, selectmode=EXTENDED)
         self.__convert_lbox.pack(side=TOP)
 
-        convert = Button(self.__convert_frame, text="Convert", command=self.convert_files)
+        convert = Button(self.__convert_frame, text="Convert", command=self.choose_convert)
         remove = Button(self.__convert_frame, text="Remove Item",
                         command=lambda: self.remove_item(self.__convert_lbox, self.__convert_list))
         load = Button(self.__convert_frame, image=self.__load_icon, width=27, height=20,
@@ -114,8 +118,8 @@ class ui:
         lbl = Label(self.__sub_frame, justify=LEFT,
                     text = "To use db_swapper first load a\nmaster list, the database you wish\nto"
                            " merge files into. Then add\nany sub files to compare against\nand hit"
-                           " 'merge'. Use convert to\nsplit a large file into smaller files\nthat "
-                           "have a matching first\ncolumn.")
+                           " 'merge'. Use convert to\nsplit a large file into smaller files\n"
+                           "using the popup options\nprovided\n")
         lbl.grid(row=1, column=1, rowspan=20, columnspan=4, sticky=N+W)
 
         lbl2 = Label(self.__sub_frame, text="Merge into master if a matched\nsub item is:", justify=LEFT)
@@ -144,6 +148,23 @@ class ui:
         remove = Button(self.__sub_frame, text="Remove Item", width=10, height=2,
                         command=lambda: self.remove_item(self.__sub_lbox, self.__sub_list))
         remove.grid(row=18, column=2, padx=(40,0), sticky=W, columnspan=2)
+
+    def choose_convert(self):
+        self.__convert_opts = Toplevel()
+        self.__convert_opts.title("Conversion method")
+
+        x = (self.width - 250) / 2
+        y = (self.height - 100) / 2
+        self.__convert_opts.geometry('%dx%d+%d+%d' % (250, 100, x, y))
+
+        Label(self.__convert_opts, text="Which method to split by?").grid(row=0, column=0, columnspan=4)
+
+        Button(self.__convert_opts, text="First Column", command=self.convert_files).\
+            grid(row=1, column=0, sticky=W, padx=5, pady=5)
+        Button(self.__convert_opts, text="By every Nth Entry", command=self.convert_files_nth).\
+            grid(row=2, column=0, sticky=W, padx=5)
+        self.__nth_number = Entry(self.__convert_opts)
+        self.__nth_number.grid(row=2,column=1)
 
 
     def import_master_file(self):
@@ -188,7 +209,8 @@ class ui:
         """
         Splits a large csv file into smaller csv files based upon their first column
         """
-
+        logger.info('Converting file(s) based upon first column')
+        self.__convert_opts.destroy()
         # loop through each file in the Listbox
         for item in self.__convert_list:
             with open(item, 'rb') as file:
@@ -213,7 +235,8 @@ class ui:
                             for seg in segment:
                                 writer.writerow(seg)
                         segment = []
-                        curr = None
+                        curr = row[0]
+                        segment.append(row)
                     else:
                         segment.append(row)
                 # if segments has data for a subject at the end of the loop, write the data to the subject
@@ -223,6 +246,42 @@ class ui:
                         writer = csv.writer(write_out, delimiter=constants.DELIMITER)
                         for seg in segment:
                             writer.writerow(seg)
+
+    def convert_files_nth(self):
+        try:
+            num = int(self.__nth_number.get())
+        except:
+            logger.info('Invalid number of entries given: \'%s\'' % self.__nth_number.get())
+            self.__convert_opts.destroy()
+            return
+        self.__convert_opts.destroy()
+        logger.info('Converting file(s) based upon every nth item')
+        for item in self.__convert_list:
+            with open(item, 'rb') as file:
+                master_reader = csv.reader(file, delimiter=constants.DELIMITER)
+                count = 0
+                parts = 0
+                segment = []
+                for row in master_reader:
+                    count += 1
+                    segment.append(row)
+                    if(count == num):
+                        with open(constants.PATH + '/%spart%d' % ((item.rpartition('/')[2])[:-4], parts) + '.csv', 'wb') as write_out:
+                            write_out.write('sep='+constants.DELIMITER + '\n')
+                            writer = csv.writer(write_out, delimiter=constants.DELIMITER)
+                            for seg in segment:
+                                writer.writerow(seg)
+                        segment = []
+                        parts += 1
+                        count = 0
+            if count != 0:
+                with open(constants.PATH + '/%spart%d' % ((item.rpartition('/')[2])[:-4], parts) + '.csv', 'wb') as write_out:
+                    write_out.write('sep='+constants.DELIMITER + '\n')
+                    writer = csv.writer(write_out, delimiter=constants.DELIMITER)
+                    for seg in segment:
+                        writer.writerow(seg)
+
+
 
 
     def merge_files(self):
