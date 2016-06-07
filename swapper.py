@@ -27,6 +27,9 @@ class ui:
 
         self.__convert_opts = None      # Top level for additional convert options
         self.__nth_number = None        # Entry box for holding nth number for convert option
+        self.__lbl_file = None          # Label which holds name of master file in top left corner
+        self.__convert_lbox = None      # Listbox for holding list of files to convert
+        self.__sub_lbox = None          # Listbox for holding list of files to compare against master file
 
         self.__match_rule = IntVar()        # the rule on how to merge files into master
         self.__column_rule = IntVar()       # which column to use for comparing
@@ -79,12 +82,13 @@ class ui:
                           command=self.import_master_file)
         load_btn.grid(row=1, column=1, padx=5, pady=5)
 
-        lbl_master = Label(self.__master_frame, text="Master List")
-        lbl_master.grid(row=1, column=2, padx=5, pady=5)
+        Label(self.__master_frame, text="Master List").\
+            grid(row=1, column=2, padx=5, pady=5)
 
         self.__lbl_file = Label(self.__master_frame, bg="white", relief=SUNKEN, width=26)
         self.__lbl_file.grid(row=2, column=1, padx=5, pady=5, columnspan=3)
 
+        # adding these weights allows the GUI to align itself within the frame
         self.__master_frame.grid_rowconfigure(0, weight=1)
         self.__master_frame.grid_columnconfigure(3, weight=1)
         self.__master_frame.grid_rowconfigure(3, weight=1)
@@ -94,8 +98,8 @@ class ui:
         """
         Initialize the GUI for the lower left side of the program
         """
-        lbl = Label(self.__convert_frame, text="Files to split")
-        lbl.pack(side=TOP)
+        Label(self.__convert_frame, text="Files to split").\
+            pack(side=TOP)
 
         self.__convert_lbox = Listbox(self.__convert_frame, width=29, height=12, selectmode=EXTENDED)
         self.__convert_lbox.pack(side=TOP)
@@ -117,15 +121,15 @@ class ui:
         self.__sub_lbox = Listbox(self.__sub_frame, width = 30, height = 23, selectmode=EXTENDED)
         self.__sub_lbox.grid(row=0, column=0, rowspan=20, padx=5, pady=5)
 
-        lbl = Label(self.__sub_frame, justify=LEFT,
+        Label(self.__sub_frame, justify=LEFT,
                     text = "To use db_swapper first load a\nmaster list, the database you wish\nto"
                            " merge files into. Then add\nany sub files to compare against\nand hit"
                            " 'merge'. Use convert to\nsplit a large file into smaller files\n"
-                           "using the popup options")
-        lbl.grid(row=1, column=1, rowspan=20, columnspan=4, sticky=N+W)
+                           "using the popup options").\
+            grid(row=1, column=1, rowspan=20, columnspan=4, sticky=N+W)
 
-        lbl2 = Label(self.__sub_frame, text="Merge into master if a matched\nsub item is:", justify=LEFT)
-        lbl2.grid(row=11, column=1, sticky=W, rowspan=3, columnspan=4)
+        Label(self.__sub_frame, text="Merge into master if a matched\nsub item is:", justify=LEFT).\
+            grid(row=11, column=1, sticky=W, rowspan=3, columnspan=4)
 
         Radiobutton(self.__sub_frame, text="Less", variable=self.__match_rule, value=constants.LESS).\
             grid(row=14, column=1, sticky=W)
@@ -134,33 +138,42 @@ class ui:
         Radiobutton(self.__sub_frame, text="Equal", variable=self.__match_rule, value=constants.EQUAL).\
             grid(row=14, column=3, sticky=W)
 
-        lbl3 = Label(self.__sub_frame, text="Column to match with:", justify=LEFT)
-        lbl3.grid(row=15, column=1, sticky=W, columnspan=4)
+        Label(self.__sub_frame, text="Column to match with:", justify=LEFT).\
+            grid(row=15, column=1, sticky=W, columnspan=4)
 
         OptionMenu(self.__sub_frame, self.__column_match_rule,1,2,3,4,5,6,7,8,9,10).\
             grid(row=15, column=3, sticky=E)
 
-        lbl4 = Label(self.__sub_frame, text="Column to compare to:", justify=LEFT)
-        lbl4.grid(row=16, column=1, sticky=W, columnspan=4)
+        Label(self.__sub_frame, text="Column to compare to:", justify=LEFT).\
+            grid(row=16, column=1, sticky=W, columnspan=4)
 
         OptionMenu(self.__sub_frame, self.__column_rule,1,2,3,4,5,6,7,8,9,10).\
             grid(row=16,column=3,sticky=E)
 
-        btn = Button(self.__sub_frame, text="Merge", width=24, command=self.merge_files)
-        btn.grid(row=19, column=1, padx=(0,5), columnspan=4, sticky=W)
+        # Merge button
+        Button(self.__sub_frame, text="Merge", width=24, command=self.merge_files).\
+            grid(row=19, column=1, padx=(0,5), columnspan=4, sticky=W)
 
-        open = Button(self.__sub_frame, image=self.__load_icon, width=73, height=35,
-                      command=lambda: self.import_and_append_file(self.__sub_lbox, self.__sub_list))
-        open.grid(row=18, column=1, padx=(0,0), sticky=W, columnspan=2)
+        # Load button for merge frame
+        Button(self.__sub_frame, image=self.__load_icon, width=73, height=35,
+                      command=lambda: self.import_and_append_file(self.__sub_lbox, self.__sub_list)).\
+            grid(row=18, column=1, padx=(0,0), sticky=W, columnspan=2)
 
-        remove = Button(self.__sub_frame, text="Remove Item", width=10, height=2,
-                        command=lambda: self.remove_item(self.__sub_lbox, self.__sub_list))
-        remove.grid(row=18, column=2, padx=(40,0), sticky=W, columnspan=2)
+        # Remove button for merge frame
+        Button(self.__sub_frame, text="Remove Item", width=10, height=2,
+                        command=lambda: self.remove_item(self.__sub_lbox, self.__sub_list)).\
+            grid(row=18, column=2, padx=(40,0), sticky=W, columnspan=2)
 
     def choose_convert(self):
+        """
+        Creates a window that prompts the user for what type of file conversion to use. The user may
+        either elect to split a file based upon it's matching first column, or split a file based
+        on every Nth item, which is entered in this window.
+        """
         self.__convert_opts = Toplevel()
         self.__convert_opts.title("Conversion method")
 
+        # hard coded dimensions
         x = (self.width - 250) / 2
         y = (self.height - 100) / 2
         self.__convert_opts.geometry('%dx%d+%d+%d' % (250, 100, x, y))
@@ -219,6 +232,11 @@ class ui:
         """
         logger.info('Converting file(s) based upon first column')
         self.__convert_opts.destroy()
+
+        if not self.__convert_list:
+            logger.error('No files to convert')
+            return
+
         # loop through each file in the Listbox
         for item in self.__convert_list:
             with open(item, 'rb') as file:
@@ -256,12 +274,19 @@ class ui:
                             writer.writerow(seg)
 
     def convert_files_nth(self):
+
+        if not self.__convert_list:
+            logger.error('No files to convert')
+            return
+
+        # if the text in the entry box cannot be converted, display error
         try:
             num = int(self.__nth_number.get())
         except:
             logger.error('Invalid number of entries given: \'%s\'' % self.__nth_number.get())
             self.__convert_opts.destroy()
             return
+
         self.__convert_opts.destroy()
         logger.info('Converting file(s) based upon every nth item')
         for item in self.__convert_list:
@@ -276,7 +301,8 @@ class ui:
                     count += 1
                     segment.append(row)
                     if(count == num):
-                        with open(constants.PATH + '/%spart%d' % ((item.rpartition('/')[2])[:-4], parts) + '.csv', 'wb') as write_out:
+                        with open(constants.PATH + '/%spart%d' %
+                                ((item.rpartition('/')[2])[:-4], parts) + '.csv', 'wb') as write_out:
                             write_out.write('sep='+constants.DELIMITER + '\n')
                             writer = csv.writer(write_out, delimiter=constants.DELIMITER)
                             for seg in segment:
