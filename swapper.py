@@ -28,9 +28,11 @@ class ui:
         self.__convert_opts = None      # Top level for additional convert options
         self.__nth_number = None        # Entry box for holding nth number for convert option
 
-        self.__match_rule = IntVar()    # the rule on how to merge files into master
-        self.__column_rule = IntVar()   # which column to use for comparing
-        self.__column_rule.set(1)       # initial value is the first column
+        self.__match_rule = IntVar()        # the rule on how to merge files into master
+        self.__column_rule = IntVar()       # which column to use for comparing
+        self.__column_rule.set(1)           # initial value is the first column
+        self.__column_match_rule = IntVar() # which column to compare for a match
+        self.__column_match_rule.set(1)     # initial value is the first column
 
         # public window dimensions
         self.width = self.__root.winfo_screenwidth()
@@ -119,11 +121,11 @@ class ui:
                     text = "To use db_swapper first load a\nmaster list, the database you wish\nto"
                            " merge files into. Then add\nany sub files to compare against\nand hit"
                            " 'merge'. Use convert to\nsplit a large file into smaller files\n"
-                           "using the popup options\nprovided\n")
+                           "using the popup options")
         lbl.grid(row=1, column=1, rowspan=20, columnspan=4, sticky=N+W)
 
         lbl2 = Label(self.__sub_frame, text="Merge into master if a matched\nsub item is:", justify=LEFT)
-        lbl2.grid(row=12, column=1, sticky=W, rowspan=2, columnspan=4)
+        lbl2.grid(row=11, column=1, sticky=W, rowspan=3, columnspan=4)
 
         Radiobutton(self.__sub_frame, text="Less", variable=self.__match_rule, value=constants.LESS).\
             grid(row=14, column=1, sticky=W)
@@ -132,11 +134,17 @@ class ui:
         Radiobutton(self.__sub_frame, text="Equal", variable=self.__match_rule, value=constants.EQUAL).\
             grid(row=14, column=3, sticky=W)
 
-        lbl3 = Label(self.__sub_frame, text="Column to compare:", justify=LEFT)
+        lbl3 = Label(self.__sub_frame, text="Column to match with:", justify=LEFT)
         lbl3.grid(row=15, column=1, sticky=W, columnspan=4)
 
-        OptionMenu(self.__sub_frame, self.__column_rule,1,2,3,4,5,6,7,8,9,10).\
+        OptionMenu(self.__sub_frame, self.__column_match_rule,1,2,3,4,5,6,7,8,9,10).\
             grid(row=15, column=3, sticky=E)
+
+        lbl4 = Label(self.__sub_frame, text="Column to compare to:", justify=LEFT)
+        lbl4.grid(row=16, column=1, sticky=W, columnspan=4)
+
+        OptionMenu(self.__sub_frame, self.__column_rule,1,2,3,4,5,6,7,8,9,10).\
+            grid(row=16,column=3,sticky=E)
 
         btn = Button(self.__sub_frame, text="Merge", width=24, command=self.merge_files)
         btn.grid(row=19, column=1, padx=(0,5), columnspan=4, sticky=W)
@@ -251,7 +259,7 @@ class ui:
         try:
             num = int(self.__nth_number.get())
         except:
-            logger.info('Invalid number of entries given: \'%s\'' % self.__nth_number.get())
+            logger.error('Invalid number of entries given: \'%s\'' % self.__nth_number.get())
             self.__convert_opts.destroy()
             return
         self.__convert_opts.destroy()
@@ -291,24 +299,66 @@ class ui:
         Merges small files into a master file based upon a matching criteria. all files in __sub_list are compared
         to __master_file.
         """
-        col = self.__column_rule.get()
+        compare_col = self.__column_rule.get() - 1
+        match_col = self.__column_match_rule.get() - 1
         rule = self.__match_rule.get()
-        row_num = 1
+
+        if rule == 0:
+            logger.error('Rule not selected, select LESS, GREATER, or EQUAL')
+            return
+
+        if self.__master_file == "":
+            logger.error('No master file selected')
+            return
+
+        if self.__sub_list is None:
+            logger.error('No sub files selected')
+            return
+
         s = ""
         if rule == constants.LESS: s = "LESS than"
-        logger.info('beginning merge, using column #%d for comparisons' % col)
-        logger.info('swapping will occur if child row is %s parent row')
-        master_reader = csv.reader(self.__master_file, delimiter=constants.DELIMITER)
+        elif rule == constants.GREATER: s = "GREATER than"
+        elif rule == constants.EQUAL: s = "EQUAL to"
+        logger.info('beginning merge, using column #%d for finding matching rows' % match_col)
+        logger.info('Checking column #%d to decide whether to overwrite rows' % compare_col)
+        logger.info('overwriting will occur if child row is %s parent row' % s)
+
+        # move master file into a list for comparing and overwriting
+        master_list = []
+        with open(self.__master_file, 'rb') as m_file:
+            master_reader = csv.reader(m_file, delimiter=constants.DELIMITER)
+            for row in master_reader:
+                master_list.append(row)
+
+        # run each sub file through the master list to swap
+        changed = False
         for sub_file in self.__sub_list:
+            sub_list = []
             with open(sub_file, 'rb') as file:
                 sub_reader = csv.reader(file, delimiter=constants.DELIMITER)
-                for row in master_reader:
-                    for srow in sub_reader:
-                        if rule == constants.LESS and srow[col] < row[col] or \
-                           rule == constants.GREATER and srow[col] > row[col] or \
-                           rule == constants.EQUAL and srow[col] == row[col]:
-                            logger.info('r%d SWAPPING %s in master list for %s' % (row_num, ','.join(row), ','.join(srow)))
-            row_num+= 1
+                for sr in sub_reader:
+                    sub_list.append(sr)
+
+            row_num = 1
+            for row in master_list:
+                for sub_row in sub_list:
+                    if str(sub_row[match_col]).lower() == str(row[match_col]).lower() and \
+                        (not 'sep=' in str(sub_row[match_col])):
+                        if rule == constants.LESS and sub_row[compare_col] < row[compare_col] or \
+                           rule == constants.GREATER and sub_row[compare_col] > row[compare_col] or \
+                           rule == constants.EQUAL and sub_row[compare_col] == row[compare_col]:
+                            changed = True
+                            logger.info('row #%d: SWAPPING %s in master list for %s in %s' %
+                                        (row_num, ','.join(row), ','.join(sub_row), sub_file.rpartition('/')[2]))
+                            master_list[(row_num-1)] = sub_row
+                row_num+= 1
+
+        # write back master list into master file with new changes
+        if changed:
+            with open((self.__master_file.rpartition('/')[2])[:-4] + '_swapped.csv', 'wb') as m_file:
+                master_writer = csv.writer(m_file, delimiter=constants.DELIMITER)
+                for row in master_list:
+                    master_writer.writerow(row)
 
 
 
