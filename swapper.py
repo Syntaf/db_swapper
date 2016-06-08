@@ -6,6 +6,7 @@
 import constants
 import csv
 import tkFileDialog
+import re
 
 from Tkconstants import RIGHT, END, DISABLED, BOTH, LEFT, \
     VERTICAL, Y, GROOVE, SUNKEN, SOLID, TOP, W, E, BOTTOM, X, \
@@ -273,6 +274,8 @@ class ui:
                         for seg in segment:
                             writer.writerow(seg)
 
+        logger.info('FINISHED, split files can be found in installation directory')
+
     def convert_files_nth(self):
 
         if not self.__convert_list:
@@ -316,6 +319,8 @@ class ui:
                     writer = csv.writer(write_out, delimiter=constants.DELIMITER)
                     for seg in segment:
                         writer.writerow(seg)
+
+        logger.info('FINISHED, split files can be found in installation directory')
 
 
 
@@ -366,13 +371,16 @@ class ui:
                     sub_list.append(sr)
 
             row_num = 1
+            non_decimal = re.compile(r'[^\d.]+')
             for row in master_list:
                 for sub_row in sub_list:
                     if str(sub_row[match_col]).lower() == str(row[match_col]).lower() and \
                         (not 'sep=' in str(sub_row[match_col])):
-                        if rule == constants.LESS and sub_row[compare_col] < row[compare_col] or \
-                           rule == constants.GREATER and sub_row[compare_col] > row[compare_col] or \
-                           rule == constants.EQUAL and sub_row[compare_col] == row[compare_col]:
+                        ms_val = int(float(non_decimal.sub('',row[compare_col])))
+                        sb_val = int(float(non_decimal.sub('',sub_row[compare_col])))
+                        if rule == constants.LESS and sb_val < ms_val or \
+                           rule == constants.GREATER and sb_val > ms_val or \
+                           rule == constants.EQUAL and sb_val == ms_val:
                             changed = True
                             logger.info('row #%d: SWAPPING %s in master list for %s in %s' %
                                         (row_num, ','.join(row), ','.join(sub_row), sub_file.rpartition('/')[2]))
@@ -386,11 +394,13 @@ class ui:
                 for row in master_list:
                     master_writer.writerow(row)
 
+        logger.info('FINISHED, swapped file located in installation directory')
+
 
 
 
 def main():
-    logger.info('db_swapper v0.1 changelog')
+    logger.info('db_swapper v0.1b changelog')
     rt = Tk()
     program = ui(rt)
 
